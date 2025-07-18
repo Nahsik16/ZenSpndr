@@ -1,0 +1,17 @@
+# Backend specific ignores (most are covered by root .gitignore)
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Database
+*.sqlite
+*.db
+
+# Logs
+*.log
+logs/
+
+# Build
+build/
+dist/

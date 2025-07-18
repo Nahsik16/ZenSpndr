@@ -184,9 +184,21 @@ export default function Dashboard() {
 
             {transactions.length === 0 ? (
               <AnimatedCard variant="outlined" style={styles.emptyState}>
-                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                  No transactions yet. Add your first transaction to get started!
+                <Text style={[styles.emptyStateIcon, { color: theme.primary }]}>
+                  💰
                 </Text>
+                <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+                  Start Your Financial Journey
+                </Text>
+                
+                <View style={styles.emptyStateActions}>
+                  <AnimatedButton
+                    title="Add Your First Transaction"
+                    onPress={() => router.push('/add-transaction')}
+                    variant="primary"
+                    style={styles.emptyStateButton}
+                  />
+                </View>
               </AnimatedCard>
             ) : (
               <View style={styles.transactionsList}>
@@ -195,7 +207,7 @@ export default function Dashboard() {
                     key={transaction.id}
                     variant="outlined"
                     style={styles.transactionCard}
-                    onPress={() => router.push(`/transaction/${transaction.id}`)}
+                    onPress={() => router.push('/transactions')}
                   >
                     <View style={styles.transactionRow}>
                       <View style={styles.transactionInfo}>
@@ -239,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginVertical: Spacing.md,
   },
   greeting: {
     fontSize: Typography.fontSize.md,
@@ -258,11 +270,12 @@ const styles = StyleSheet.create({
   },
   balanceContainer: {
     marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
   balanceCard: {
     marginBottom: Spacing.md,
     alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.md,
   },
   balanceLabel: {
     fontSize: Typography.fontSize.md,
@@ -292,6 +305,8 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     marginBottom: Spacing.lg,
+    marginHorizontal: -Spacing.sm,
+    paddingHorizontal: Spacing.md,
   },
   actionButton: {
     paddingVertical: Spacing.md,
@@ -315,12 +330,33 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyStateTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   emptyStateText: {
     fontSize: Typography.fontSize.md,
     textAlign: 'center',
-    lineHeight: Typography.lineHeight.relaxed,
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  emptyStateActions: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  emptyStateButton: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
   },
   transactionsList: {
     gap: Spacing.sm,

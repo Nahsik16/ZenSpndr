@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.md,
+    paddingBottom: 120, // Add extra padding for tab bar
   },
   header: {
     marginBottom: Spacing.lg,
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.regular,
     marginBottom: Spacing.md,
-    lineHeight: Typography.lineHeight.normal,
+    lineHeight: 20,
   },
   themeOptions: {
     flexDirection: 'row',
@@ -299,7 +300,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    minHeight: 80,
+    justifyContent: 'center',
   },
   themeIcon: {
     fontSize: Typography.fontSize.xl,
@@ -316,6 +319,7 @@ const styles = StyleSheet.create({
   infoItem: {
     flex: 1,
     minWidth: '40%',
+    paddingVertical: Spacing.xs,
   },
   infoLabel: {
     fontSize: Typography.fontSize.sm,
@@ -331,8 +335,9 @@ const styles = StyleSheet.create({
   },
   featureItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.md,
+    paddingVertical: Spacing.xs,
   },
   featureIcon: {
     fontSize: Typography.fontSize.xl,
@@ -348,12 +353,12 @@ const styles = StyleSheet.create({
   featureDescription: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.regular,
-    lineHeight: Typography.lineHeight.normal,
+    lineHeight: 18,
   },
   aboutText: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.regular,
-    lineHeight: Typography.lineHeight.relaxed,
+    lineHeight: 22,
     marginBottom: Spacing.md,
   },
   dangerButton: {

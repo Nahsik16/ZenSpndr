@@ -155,10 +155,23 @@ export default function TransactionsList() {
         >
           {filteredTransactions.length === 0 ? (
             <AnimatedCard variant="outlined" style={styles.emptyState}>
+              <Text style={[styles.emptyStateIcon, { color: theme.primary }]}>
+                {filter === 'all' ? '💰' : filter === 'income' ? '💵' : '💸'}
+              </Text>
+              <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+                {filter === 'all' 
+                  ? 'No Transactions Yet'
+                  : filter === 'income' 
+                    ? 'No Income Transactions'
+                    : 'No Expense Transactions'
+                }
+              </Text>
               <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
                 {filter === 'all' 
-                  ? 'No transactions yet. Add your first transaction to get started!'
-                  : `No ${filter} transactions found.`
+                  ? 'Start tracking your finances by adding your first transaction. Every financial journey begins with a single step.'
+                  : filter === 'income'
+                    ? 'No income transactions found. Add your salary, freelance work, or other income sources.'
+                    : 'No expense transactions found. Track your spending to better understand your financial habits.'
                 }
               </Text>
             </AnimatedCard>
@@ -169,7 +182,7 @@ export default function TransactionsList() {
                   key={transaction.id}
                   variant="outlined"
                   style={styles.transactionCard}
-                  onPress={() => router.push(`/transaction/${transaction.id}`)}
+                  onPress={() => router.push('/transactions')}
                 >
                   <View style={styles.transactionHeader}>
                     <View style={styles.transactionInfo}>
@@ -267,11 +280,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     marginTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyStateTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   emptyStateText: {
     fontSize: Typography.fontSize.md,
     textAlign: 'center',
-    lineHeight: Typography.lineHeight.relaxed,
+    lineHeight: 22,
+    paddingHorizontal: Spacing.sm,
   },
   transactionsList: {
     gap: Spacing.sm,

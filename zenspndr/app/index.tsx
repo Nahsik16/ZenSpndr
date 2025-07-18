@@ -5,8 +5,8 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the tabs layout
-    router.replace('/(tabs)');
+    // Redirect to the splash screen first
+    router.replace('/splash');
   }, [router]);
 
   return null;

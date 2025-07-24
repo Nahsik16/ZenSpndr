@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,14 +37,7 @@ export default function Dashboard() {
   const fadeAnim = useSharedValue(0);
   const slideAnim = useSharedValue(50);
 
-  useEffect(() => {
-    loadData();
-    // Animate on load
-    fadeAnim.value = withTiming(1, { duration: 800 });
-    slideAnim.value = withSpring(0, { damping: 15 });
-  }, [fadeAnim, slideAnim]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [transactionsData, summaryData] = await Promise.all([
         TransactionService.getTransactions(),
@@ -55,7 +48,16 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error loading data:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    // Trigger animations after component mounts
+    setTimeout(() => {
+      fadeAnim.value = withTiming(1, { duration: 800 });
+      slideAnim.value = withSpring(0, { damping: 15 });
+    }, 0);
+  }, [loadData, fadeAnim, slideAnim]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -71,10 +73,15 @@ export default function Dashboard() {
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+      }).format(amount);
+    } catch {
+      // Fallback for currency formatting errors
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
   };
 
   const formatDate = (dateString: string): string => {
@@ -98,11 +105,12 @@ export default function Dashboard() {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={[styles.greeting, { color: theme.textSecondary }]}>
-                Welcome back! 👋
-              </Text>
+              
               <Text style={[styles.title, { color: theme.text }]}>
                 ZenSpndr
+              </Text>
+              <Text style={[styles.greeting, { color: theme.textSecondary }]}>
+                Welcome back! 👋
               </Text>
             </View>
             <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
@@ -157,13 +165,19 @@ export default function Dashboard() {
           <View style={styles.quickActions}>
             <AnimatedButton
               title="Add Income"
-              onPress={() => router.push('/add-transaction?type=income')}
+              onPress={() => router.push({
+                pathname: '/add-transaction',
+                params: { type: 'income' }
+              })}
               variant="secondary"
               style={StyleSheet.flatten([styles.actionButton, { flex: 1, marginRight: Spacing.sm }])}
             />
             <AnimatedButton
               title="Add Expense"
-              onPress={() => router.push('/add-transaction?type=expense')}
+              onPress={() => router.push({
+                pathname: '/add-transaction',
+                params: { type: 'expense' }
+              })}
               variant="primary"
               style={StyleSheet.flatten([styles.actionButton, { flex: 1, marginLeft: Spacing.sm }])}
             />
@@ -269,7 +283,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xl,
   },
   balanceContainer: {
-    marginBottom: Spacing.lg,
+    marginVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
   },
   balanceCard: {

@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   categoryButton: {
     paddingVertical: Spacing.sm,
@@ -358,6 +358,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   submitButton: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
 });

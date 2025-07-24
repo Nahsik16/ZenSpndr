@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -32,20 +32,23 @@ export default function TransactionsList() {
   const fadeAnim = useSharedValue(0);
   const slideAnim = useSharedValue(50);
 
-  useEffect(() => {
-    loadTransactions();
-    fadeAnim.value = withTiming(1, { duration: 800 });
-    slideAnim.value = withSpring(0, { damping: 15 });
-  }, [fadeAnim, slideAnim]);
-
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       const data = await TransactionService.getTransactions();
       setTransactions(data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     } catch (error) {
       console.error('Error loading transactions:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadTransactions();
+    // Trigger animations after component mounts
+    setTimeout(() => {
+      fadeAnim.value = withTiming(1, { duration: 800 });
+      slideAnim.value = withSpring(0, { damping: 15 });
+    }, 0);
+  }, [loadTransactions, fadeAnim, slideAnim]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -79,7 +82,7 @@ export default function TransactionsList() {
       opacity: fadeAnim.value,
       transform: [{ translateY: slideAnim.value }],
     };
-  });
+  }, []);
 
   const filteredTransactions = transactions.filter(transaction => {
     if (filter === 'all') return true;
@@ -87,10 +90,15 @@ export default function TransactionsList() {
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+      }).format(amount);
+    } catch {
+      // Fallback for currency formatting errors
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
   };
 
   const formatDate = (dateString: string): string => {

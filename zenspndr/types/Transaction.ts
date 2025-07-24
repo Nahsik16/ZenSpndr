@@ -54,7 +54,6 @@ export const INCOME_CATEGORIES = [
   'Freelance',
   'Business',
   'Investment',
-  'Rental',
   'Gift',
   'Other',
 ];

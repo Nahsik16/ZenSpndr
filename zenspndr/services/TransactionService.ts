@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Transaction, TransactionFormData, TransactionSummary, CategorySummary } from '../types/Transaction';
+import { API_CONFIG, ApiResponse, createApiUrl } from '../constants/ApiConfig';
 
 const STORAGE_KEY = '@transactions';
 const USER_ID = 'user_1'; // Mock user ID
@@ -7,17 +8,81 @@ const USER_ID = 'user_1'; // Mock user ID
 export class TransactionService {
   static async getTransactions(): Promise<Transaction[]> {
     try {
+      // Debug: Log the API URL being used
+      const apiUrl = createApiUrl(API_CONFIG.ENDPOINTS.TRANSACTIONS);
+      console.log('Fetching transactions from:', apiUrl);
+      
+      // Try to fetch from API first
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('API Response status:', response.status);
+      console.log('API Response ok:', response.ok);
+
+      if (response.ok) {
+        const result: ApiResponse<Transaction[]> = await response.json();
+        console.log('API Response data:', result);
+        if (result.success && result.data) {
+          return result.data;
+        }
+      }
+
+      // Fallback to local storage if API fails
+      console.warn('API unavailable, falling back to local storage');
       const data = await AsyncStorage.getItem(STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
       console.error('Error loading transactions:', error);
-      return [];
+      // Fallback to local storage
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch (localError) {
+        console.error('Error loading from local storage:', localError);
+        return [];
+      }
     }
   }
 
   static async saveTransaction(formData: TransactionFormData): Promise<Transaction> {
     try {
-      const transactions = await this.getTransactions();
+      // Try to save to API first
+      const response = await fetch(createApiUrl(API_CONFIG.ENDPOINTS.TRANSACTIONS), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: USER_ID,
+          ...formData,
+        }),
+      });
+
+      if (response.ok) {
+        const result: ApiResponse<Transaction> = await response.json();
+        if (result.success && result.data) {
+          // Also save to local storage as backup
+          await this.saveToLocalStorage(result.data);
+          return result.data;
+        }
+      }
+
+      // Fallback to local storage if API fails
+      console.warn('API unavailable, saving to local storage');
+      return await this.saveToLocalStorage({
+        id: Date.now().toString(),
+        user_id: USER_ID,
+        ...formData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error saving transaction:', error);
+      // Fallback to local storage
       const newTransaction: Transaction = {
         id: Date.now().toString(),
         user_id: USER_ID,
@@ -25,19 +90,57 @@ export class TransactionService {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      
-      transactions.push(newTransaction);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-      return newTransaction;
+      return await this.saveToLocalStorage(newTransaction);
+    }
+  }
+
+  private static async saveToLocalStorage(transaction: Transaction): Promise<Transaction> {
+    const transactions = await this.getLocalTransactions();
+    const existingIndex = transactions.findIndex(t => t.id === transaction.id);
+    
+    if (existingIndex >= 0) {
+      transactions[existingIndex] = transaction;
+    } else {
+      transactions.push(transaction);
+    }
+    
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    return transaction;
+  }
+
+  private static async getLocalTransactions(): Promise<Transaction[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('Error saving transaction:', error);
-      throw error;
+      console.error('Error loading local transactions:', error);
+      return [];
     }
   }
 
   static async updateTransaction(id: string, formData: TransactionFormData): Promise<Transaction> {
     try {
-      const transactions = await this.getTransactions();
+      // Try to update via API first
+      const response = await fetch(createApiUrl(`${API_CONFIG.ENDPOINTS.TRANSACTIONS}/${id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const result: ApiResponse<Transaction> = await response.json();
+        if (result.success && result.data) {
+          // Also update local storage
+          await this.saveToLocalStorage(result.data);
+          return result.data;
+        }
+      }
+
+      // Fallback to local storage if API fails
+      console.warn('API unavailable, updating local storage');
+      const transactions = await this.getLocalTransactions();
       const index = transactions.findIndex(t => t.id === id);
       
       if (index === -1) {
@@ -50,8 +153,7 @@ export class TransactionService {
         updated_at: new Date().toISOString(),
       };
 
-      transactions[index] = updatedTransaction;
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+      await this.saveToLocalStorage(updatedTransaction);
       return updatedTransaction;
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -61,12 +163,64 @@ export class TransactionService {
 
   static async deleteTransaction(id: string): Promise<void> {
     try {
-      const transactions = await this.getTransactions();
+      // Try to delete via API first
+      const response = await fetch(createApiUrl(`${API_CONFIG.ENDPOINTS.TRANSACTIONS}/${id}`), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Also remove from local storage
+        await this.deleteFromLocalStorage(id);
+        return;
+      }
+
+      // Fallback to local storage if API fails
+      console.warn('API unavailable, deleting from local storage');
+      await this.deleteFromLocalStorage(id);
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      // Fallback to local storage
+      await this.deleteFromLocalStorage(id);
+    }
+  }
+
+  private static async deleteFromLocalStorage(id: string): Promise<void> {
+    try {
+      const transactions = await this.getLocalTransactions();
       const filteredTransactions = transactions.filter(t => t.id !== id);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filteredTransactions));
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      console.error('Error deleting from local storage:', error);
       throw error;
+    }
+  }
+
+  static async clearAllData(): Promise<void> {
+    try {
+      // Try to clear via API first
+      const response = await fetch(createApiUrl(API_CONFIG.ENDPOINTS.TRANSACTIONS), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Also clear local storage
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      // Fallback to local storage if API fails
+      console.warn('API unavailable, clearing local storage');
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      // Fallback to local storage
+      await AsyncStorage.removeItem(STORAGE_KEY);
     }
   }
 

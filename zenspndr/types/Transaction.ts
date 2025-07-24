@@ -44,7 +44,6 @@ export const EXPENSE_CATEGORIES = [
   'Education',
   'Travel',
   'Personal Care',
-  'Home & Garden',
   'Gifts & Donations',
   'Business',
   'Other',

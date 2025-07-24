@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
 import { AnimatedCard } from '../../components/AnimatedCard';
+import { TransactionService } from '../../services/TransactionService';
 import { Spacing, Typography } from '../../constants/Colors';
 
 export default function Settings() {
@@ -47,7 +48,7 @@ export default function Settings() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear all transactions (implement this method in TransactionService)
+              await TransactionService.clearAllData();
               Alert.alert('Success', 'All data has been cleared.');
             } catch {
               Alert.alert('Error', 'Failed to clear data.');

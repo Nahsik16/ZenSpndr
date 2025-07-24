@@ -358,6 +358,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
   },
   submitButton: {
-    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
 });

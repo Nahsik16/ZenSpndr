@@ -70,9 +70,9 @@ export default function Analytics() {
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(amount);
   };
 
@@ -273,7 +273,7 @@ export default function Analytics() {
                 <Text style={[styles.statValue, { color: theme.accent }]}>
                   {summary.totalExpenses > 0 ? 
                     formatCurrency(summary.totalExpenses / transactions.filter(t => t.type === 'expense').length) : 
-                    '$0.00'
+                    '₹0.00'
                   }
                 </Text>
                 <Text style={[styles.statLabel, { color: theme.textSecondary }]}>

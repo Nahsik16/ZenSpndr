@@ -71,9 +71,9 @@ export default function Dashboard() {
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
     }).format(amount);
   };
 
@@ -280,11 +280,12 @@ const styles = StyleSheet.create({
   balanceLabel: {
     fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.medium,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   balanceAmount: {
-    fontSize: Typography.fontSize.display,
+    fontSize: Typography.fontSize.display-3,
     fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.md,
   },
   summaryRow: {
     flexDirection: 'row',

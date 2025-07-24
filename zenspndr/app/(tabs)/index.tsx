@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -58,6 +58,13 @@ export default function Dashboard() {
       slideAnim.value = withSpring(0, { damping: 15 });
     }, 0);
   }, [loadData, fadeAnim, slideAnim]);
+
+  // Refresh data when the screen comes into focus (e.g., returning from add-transaction)
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

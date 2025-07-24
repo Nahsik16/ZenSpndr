@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -34,13 +36,7 @@ export default function Analytics() {
   const fadeAnim = useSharedValue(0);
   const slideAnim = useSharedValue(50);
 
-  useEffect(() => {
-    loadData();
-    fadeAnim.value = withTiming(1, { duration: 800 });
-    slideAnim.value = withSpring(0, { damping: 15 });
-  }, [fadeAnim, slideAnim]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [transactionsData, summaryData, categoryData] = await Promise.all([
         TransactionService.getTransactions(),
@@ -54,7 +50,23 @@ export default function Analytics() {
     } catch (error) {
       console.error('Error loading analytics data:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    // Trigger animations after component mounts
+    setTimeout(() => {
+      fadeAnim.value = withTiming(1, { duration: 800 });
+      slideAnim.value = withSpring(0, { damping: 15 });
+    }, 0);
+  }, [loadData, fadeAnim, slideAnim]);
+
+  // Refresh analytics when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -70,10 +82,15 @@ export default function Analytics() {
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+      }).format(amount);
+    } catch {
+      // Fallback for currency formatting errors
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
   };
 
   const getMonthlyData = () => {
@@ -96,12 +113,20 @@ export default function Analytics() {
       }
     });
 
-    return Object.entries(monthlyData)
+    const monthlyEntries = Object.entries(monthlyData)
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
       .slice(-6); // Last 6 months
+
+    // Find the maximum value across all months for proper scaling
+    const maxMonthlyValue = Math.max(
+      ...monthlyEntries.flatMap(([, data]) => [data.income, data.expense]),
+      1 // Ensure minimum value of 1 to avoid division by zero
+    );
+
+    return { monthlyEntries, maxMonthlyValue };
   };
 
-  const monthlyData = getMonthlyData();
+  const { monthlyEntries: monthlyData, maxMonthlyValue } = getMonthlyData();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -154,36 +179,63 @@ export default function Analytics() {
           {/* Monthly Trend */}
           <AnimatedCard variant="elevated" style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Monthly Trend
+              Monthly Trend (Amount)
             </Text>
             <View style={styles.chartContainer}>
-              {monthlyData.map(([month, data], index) => (
-                <View key={month} style={styles.monthColumn}>
-                  <Text style={[styles.monthLabel, { color: theme.textSecondary }]}>
-                    {month}
-                  </Text>
-                  <View style={styles.bars}>
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: Math.max(4, (data.income / Math.max(summary.totalIncome, 1)) * 100),
-                          backgroundColor: theme.secondary,
-                        },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: Math.max(4, (data.expense / Math.max(summary.totalExpenses, 1)) * 100),
-                          backgroundColor: theme.error,
-                        },
-                      ]}
-                    />
+              {monthlyData.map(([month, data], index) => {
+                // Calculate dynamic bar width based on actual screen width
+                const screenWidth = Dimensions.get('window').width;
+                const containerPadding = 32; // Total horizontal padding (16 * 2)
+                const chartMargin = 16; // Chart container margins
+                const monthGap = 4; // Gap between month columns
+                const totalGaps = (monthlyData.length - 1) * monthGap;
+                const availableWidth = screenWidth - containerPadding - chartMargin - totalGaps;
+                const monthColumnWidth = availableWidth / monthlyData.length;
+                const barWidth = Math.max(8, Math.min(20, (monthColumnWidth - 12) / 2)); // Width per bar
+                
+                return (
+                  <View key={month} style={[styles.monthColumn, { 
+                    flex: 1,
+                    marginHorizontal: monthGap / 2,
+                  }]}>
+                    <View style={styles.bars}>
+                      <View style={styles.barGroup}>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(12, (data.income / maxMonthlyValue) * 120),
+                              backgroundColor: theme.secondary,
+                              width: barWidth,
+                            },
+                          ]}
+                        />
+                        <Text style={[styles.barValue, { color: theme.textSecondary, fontSize: Math.min(10, barWidth / 1.5) }]}>
+                          {data.income > 0 ? `₹${(data.income / 1000).toFixed(0)}k` : '₹0'}
+                        </Text>
+                      </View>
+                      <View style={styles.barGroup}>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(12, (data.expense / maxMonthlyValue) * 120),
+                              backgroundColor: theme.error,
+                              width: barWidth,
+                            },
+                          ]}
+                        />
+                        <Text style={[styles.barValue, { color: theme.textSecondary, fontSize: Math.min(10, barWidth / 1.5) }]}>
+                          {data.expense > 0 ? `₹${(data.expense / 1000).toFixed(0)}k` : '₹0'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.monthLabel, { color: theme.textSecondary, fontSize: Math.min(12, barWidth) }]}>
+                      {month}
+                    </Text>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
             <View style={styles.legend}>
               <View style={styles.legendItem}>
@@ -345,30 +397,44 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'flex-end',
-    height: 120,
+    height: 180,
     marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    overflow: 'hidden',
   },
   monthColumn: {
-    flex: 1,
     alignItems: 'center',
+    minWidth: 40,
+    maxWidth: 80,
   },
   monthLabel: {
     fontSize: Typography.fontSize.xs,
     fontWeight: Typography.fontWeight.medium,
-    marginBottom: Spacing.xs,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   bars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 80,
-    gap: 2,
+    height: 140,
+    gap: 3,
+    justifyContent: 'center',
+  },
+  barGroup: {
+    alignItems: 'center',
+    gap: 3,
   },
   bar: {
-    width: 8,
-    minHeight: 4,
-    borderRadius: 2,
+    minHeight: 8,
+    borderRadius: 4,
+    // width will be set dynamically in the component
+  },
+  barValue: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.medium,
+    marginTop: 2,
   },
   legend: {
     flexDirection: 'row',

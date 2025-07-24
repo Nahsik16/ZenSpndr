@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -49,6 +49,13 @@ export default function TransactionsList() {
       slideAnim.value = withSpring(0, { damping: 15 });
     }, 0);
   }, [loadTransactions, fadeAnim, slideAnim]);
+
+  // Refresh transactions when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadTransactions();
+    }, [loadTransactions])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
